@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/jsonnet-libs/docsonnet.git",
+          "subdir": "doc-util"
+        }
+      },
+      "version": "6ac6c69685b8c29c54515448eaca583da2d88150",
+      "sum": "BrAL/k23jq+xy9oA7TWIhUx07dsA/QLm3g7ktCwe//U="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/jsonnet-libs/testonnet.git",
+          "subdir": ""
+        }
+      },
+      "version": "9b30f882132b8d8754535fbcee822b804c90405f",
+      "sum": "MB1dww51rdYJTWAAFkrOXMeMNxzZ5yyFPjPxaERDb1k="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/jsonnet-libs/xtd.git",
+          "subdir": ""
+        }
+      },
+      "version": "4eee017d21cb63a303925d1dcd9fc5c496809b46",
+      "sum": "Kh0GbIycNmJPzk6IOMXn1BbtLNyaiiimclYk7+mvsns="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/max-mapper/csv-spectrum.git",
+          "subdir": ""
+        }
+      },
+      "version": "d30e80f8b99d2eecb3778f1d7b9ed1cb425502ec",
+      "sum": "9nvoVz3S9DvBgNhsqunXTkp5fRDXeQI0IRQvVI5+KWE="
+    }
+  ],
+  "legacyImports": false
+}
