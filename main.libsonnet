@@ -8,7 +8,7 @@
       std.foldl(
         function(acc, i)
           acc + {
-            [header[i]]: this.sanitizeQuotes(line[i]),
+            [header[i]]: line[i],
           },
         std.range(0, std.length(line) - 1),
         {},
@@ -16,25 +16,26 @@
       for line in lined[1:]
     ],
 
-  sanitizeQuotes(str):
-    if std.startsWith(str, '"')
-    then std.strReplace(str[1:std.length(str) - 1], '""', '"')
-    else str,
-
   lines(str):
     local lexed = this.lex(str);
     local folded = std.foldl(
       function(acc, field)
+        local sanitized = self.sanitizeQuotes(field[1]);
         acc + {
           prev: field[0],
-          [if acc.prev == field[0] then 'row']+: [field[1]],
-          [if acc.prev != field[0] then 'row']: [field[1]],
+          [if acc.prev == field[0] then 'row']+: [sanitized],
+          [if acc.prev != field[0] then 'row']: [sanitized],
           [if acc.prev != field[0] then 'rows']+: [acc.row],
         },
       lexed,
-      { prev: 0 }
+      { prev: 0, rows: [] }
     );
     folded.rows + [folded.row],
+
+  sanitizeQuotes(str):
+    if std.startsWith(str, '"')
+    then std.strReplace(str[1:std.length(str) - 1], '""', '"')
+    else str,
 
   lex(str, line=0):
     local field =
@@ -71,7 +72,12 @@
       then str
       else str[0:lastCharIndices[0]];
 
-    value,
+    if str[0] == ','
+    then ''
+    else if value == '\n'
+            || value == '\r\n'
+    then ''
+    else value,
 
   lexQuoted(str):
     assert str[0] == '"' : 'Expected " but got %s' % str[0];
