@@ -94,7 +94,7 @@ test.new(std.thisFile)
         actual=(
           if std.startsWith(item.key, 'header')
           then csv.parse(item.value)
-          else csv.lines(item.value)
+          else csv.parseRecords(item.value)
         ),
         expected=json[item.key]
       )

@@ -1,95 +1,105 @@
 {
-  local this = self,
+  local COMMA = ',',
+  local DQUOTE = '"',
+  local TDQUOTE = '""',
+  local CR = '\r',
+  local LF = '\n',
+  local CRLF = CR + LF,
 
   parse(str):
-    local lined = this.lines(str);
-    local header = lined[0];
+    local records = self.parseRecords(str);
+    local header = records[0];
     [
       std.foldl(
         function(acc, i)
           acc + {
-            [header[i]]: line[i],
+            [header[i]]: record[i],
           },
-        std.range(0, std.length(line) - 1),
+        std.range(0, std.length(record) - 1),
         {},
       )
-      for line in lined[1:]
+      for record in records[1:]
     ],
 
-  lines(str):
-    local lexed = this.lex(str);
+  parseRecords(str):
+    local lexed = self.lex(str);
     local folded = std.foldl(
       function(acc, field)
+        local line = field[0];
         local sanitized = self.sanitizeQuotes(field[1]);
         acc + {
-          prev: field[0],
-          [if acc.prev == field[0] then 'row']+: [sanitized],
-          [if acc.prev != field[0] then 'row']: [sanitized],
-          [if acc.prev != field[0] then 'rows']+: [acc.row],
+          prevLine: line,
+          [if acc.prevLine == line then 'record']+: [sanitized],
+          [if acc.prevLine != line then 'record']: [sanitized],
+          [if acc.prevLine != line then 'records']+: [acc.record],
         },
       lexed,
-      { prev: 0, rows: [] }
+      { prevLine: 0, records: [] }
     );
-    folded.rows + [folded.row],
+    folded.records + [folded.record],
 
   sanitizeQuotes(str):
-    if std.startsWith(str, '"')
-    then std.strReplace(str[1:std.length(str) - 1], '""', '"')
+    if std.startsWith(str, DQUOTE)
+    then std.strReplace(str[1:std.length(str) - 1], TDQUOTE, DQUOTE)
     else str,
 
+  local lex = self.lex,
   lex(str, line=0):
     local field =
-      if str[0] == '"'
-      then this.lexQuoted(str)
-      else this.lexField(str);
+      if str[0] == DQUOTE
+      then self.lexEscaped(str)
+      else self.lexNonEscaped(str);
 
     [[line, field]]
-    + (if str[std.length(field):] != '\n'
-          && str[std.length(field):] != '\r\n'
-          && str[std.length(field):] != ''
+    + (if !std.member(['', LF, CRLF], str[std.length(field):])
        then
          std.get(
            {
-             '\n': this.lex(str[std.length(field) + 1:], line + 1),
-             '\r': this.lex(str[std.length(field) + 2:], line + 1),
-             ',': this.lex(str[std.length(field) + 1:], line),
+             [COMMA]: lex(str[std.length(field) + 1:], line),
+             [LF]: lex(str[std.length(field) + 1:], line + 1),
+             [CR]: lex(str[std.length(field) + 2:], line + 1),
            },
            str[std.length(field)],
            error 'unexpected character: ' + str
          )
        else []),
 
-  lexField(str):
-    local lastCharIndices = std.sort(
-      std.map(function(i) i + 1, std.findSubstr(',', str[1:]))
-      + std.map(function(i) i + 1, std.findSubstr('\n', str[1:]))
-      + std.flatMap(function(i) [i + 1] + [i + 2], std.findSubstr('\r\n', str[1:]))
-    );
+  lexNonEscaped(str):
+    local lastCharIndices =
+      std.sort(
+        std.findSubstr(COMMA, str[1:])
+        + std.findSubstr(LF, str[1:])
+        + std.findSubstr(CRLF, str[1:])
+      );
 
     local value =
-      if std.length(str) == 1
-         || std.length(lastCharIndices) == 0
+      if std.length(lastCharIndices) == 0
       then str
-      else str[0:lastCharIndices[0]];
+      else str[0:lastCharIndices[0] + 1];
 
     if str[0] == ','
     then ''
-    else if value == '\n'
-            || value == '\r\n'
-    then ''
-    else value,
+    else std.stripChars(value, CRLF),
 
-  lexQuoted(str):
-    assert str[0] == '"' : 'Expected " but got %s' % str[0];
+  lexEscaped(str):
+    assert str[0] == DQUOTE : 'Expected " but got %s' % str[0];
 
-    local findLastChar = std.map(function(i) i + 1, std.findSubstr('"', str[1:]));
-    local findEscapedChar = std.flatMap(function(i) [i + 1] + [i + 2], std.findSubstr('""', str[1:]));
+    local escapedQuotesIndices =
+      std.flatMap(
+        function(i) [i, i + 1],
+        std.findSubstr(TDQUOTE, str[1:])
+      );
 
-    local lastCharIndices = std.filter(function(e) !std.member(findEscapedChar, e), findLastChar);
+    local lastCharIndices =
+      std.filterMap(
+        function(i) !std.member(escapedQuotesIndices, i),
+        function(i) i,
+        std.findSubstr(DQUOTE, str[1:])
+      );
 
-    assert std.length(lastCharIndices) > 0 : 'Unterminated Quoted Field: ' + str;
+    assert std.length(lastCharIndices) > 0 : 'Unterminated Escaped Field: ' + str;
 
-    local value = str[0:lastCharIndices[0] + 1];
+    local value = str[0:lastCharIndices[0] + 2];
 
     value,
 }
