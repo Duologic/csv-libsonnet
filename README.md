@@ -8,7 +8,7 @@ Tested with test suite from [max-mapper/csv-spectrum](https://github.com/max-map
 
 ## Usage
 
-```
+```jsonnet
 local parser = import 'github.com/Duologic/csv-libsonnet/main.libsonnet';
 local csv = importstr 'path/to/your.csv';
 
